@@ -1,101 +1,125 @@
+// app/page.tsx
+'use client'
+import { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Navbar from "@/components/Navbar";
 import Image from "next/image";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+interface ArtistData {
+  image: string;
+  name: string;
+  monthlySubscribers: number;
+  topTracks: Array<{ id: string; name: string }>;
+}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+export default function Home() {
+  const [artist, setArtist] = useState<string>('');
+  const [artistData, setArtistData] = useState<ArtistData | null>(null);
+
+  const handleSearch = async () => {
+    try {
+      // Fetch access token
+      const tokenResponse = await fetch("/api/spotify", { method: "POST" });
+      if (!tokenResponse.ok) {
+        throw new Error('Failed to fetch access token');
+      }
+      const { access_token } = await tokenResponse.json();
+  
+      // Fetch artist data
+      const artistResponse = await fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(artist)}&type=artist`,
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        }
+      );
+  
+      if (!artistResponse.ok) {
+        throw new Error('Failed to fetch artist data');
+      }
+  
+      const { artists } = await artistResponse.json();
+      if (artists.items.length > 0) {
+        const artistInfo = artists.items[0];
+        
+        // Fetch monthly subscribers and top tracks
+        const monthlySubscribers = await fetch(
+          `https://api.spotify.com/v1/artists/${artistInfo.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+            },
+          }
+        ).then(res => {
+          if (!res.ok) throw new Error('Failed to fetch monthly subscribers');
+          return res.json();
+        });
+  
+        const topTracksResponse = await fetch(
+          `https://api.spotify.com/v1/artists/${artistInfo.id}/top-tracks?market=US`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+            },
+          }
+        );
+  
+        if (!topTracksResponse.ok) {
+          throw new Error('Failed to fetch top tracks');
+        }
+  
+        const topTracks = await topTracksResponse.json();
+        setArtistData({
+          image: artistInfo.images[0]?.url,
+          name: artistInfo.name,
+          monthlySubscribers: monthlySubscribers.followers.total,
+          topTracks: topTracks.tracks.slice(0, 5),
+        });
+      } else {
+        setArtistData(null); // No artist found
+      }
+    } catch (error) {
+      console.error(error);
+      setArtistData(null); // Clear any existing data
+    }
+  };
+  
+  return (
+    <>
+      {/* Navbar */}
+      <Navbar />
+
+      {/* Content */}
+      <div className="container py-20 flex justify-center items-center ">
+        <div className="grid w-full max-w-sm items-center gap-1.5">
+          {artistData && (
+            <div>
+              <Image src={artistData.image} alt={artistData.name} width={150} height={150} className='mb-7 rounded-full object-contain' />
+              <p className='font-bold text-base'>Artist: <span className='font-normal text-xl text-white'>{artistData.name}</span></p>
+              <p className="mb-10 font-bold text-base">Monthly Subscribers: <span className='font-normal text-xl text-white'>{artistData.monthlySubscribers} <span className='text-sm'>monthly subs</span></span></p>
+              <ul className='font-bold text-xl'>
+                Top Tracks:
+                {artistData.topTracks.map(track => (
+                  <li key={track.id} className='list-disc font-normal text-base ml-10 text-white'>{track.name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <Label htmlFor="artist" className='mt-10'>Artist</Label>
+          <Input
+            type="text"
+            id="artist"
+            placeholder="Search Artist"
+            value={artist}
+            onChange={(e) => setArtist(e.target.value)}
+            className='text-white'
+          />
+          <Button onClick={handleSearch}>Search</Button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+    </>
   );
 }
