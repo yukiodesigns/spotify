@@ -115,7 +115,7 @@ export default function Home() {
             placeholder="Search Artist"
             value={artist}
             onChange={(e) => setArtist(e.target.value)}
-            className='text-white'
+            className='text-black'
           />
           <Button onClick={handleSearch} className='bg-[#0f971c] text-white hover:bg-[#0c200e]'>Search</Button>
         </div>
