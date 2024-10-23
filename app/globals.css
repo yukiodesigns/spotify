@@ -5,7 +5,8 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   align-items: center;
-  background: linear-gradient(to left, #0c0c0c, #345257); /* Example gradient */
+  /* background: #858e96c0; */
+  /* background: linear-gradient(to left, #0c0c0c, #345257); Example gradient */
   height: 100vh; /* Ensure the body takes up the full height */
   margin: 0; /* Remove default margin */
 }

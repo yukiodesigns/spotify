@@ -98,12 +98,12 @@ export default function Home() {
           {artistData && (
             <div>
               <Image src={artistData.image} alt={artistData.name} width={150} height={150} className='mb-7 rounded-full object-contain' />
-              <p className='font-bold text-base'>Artist: <span className='font-normal text-xl text-white'>{artistData.name}</span></p>
-              <p className="mb-10 font-bold text-base">Monthly Subscribers: <span className='font-normal text-xl text-white'>{artistData.monthlySubscribers} <span className='text-sm'>monthly subs</span></span></p>
+              <p className='font-bold text-base'>Artist: <span className='font-normal text-xl '>{artistData.name}</span></p>
+              <p className="mb-10 font-bold text-base">Monthly Subscribers: <span className='font-normal text-xl '>{artistData.monthlySubscribers} <span className='text-sm'>monthly subs</span></span></p>
               <ul className='font-bold text-xl'>
                 Top Tracks:
                 {artistData.topTracks.map(track => (
-                  <li key={track.id} className='list-disc font-normal text-base ml-10 text-white'>{track.name}</li>
+                  <li key={track.id} className='list-disc font-normal text-base ml-10 '>{track.name}</li>
                 ))}
               </ul>
             </div>
@@ -117,7 +117,7 @@ export default function Home() {
             onChange={(e) => setArtist(e.target.value)}
             className='text-white'
           />
-          <Button onClick={handleSearch}>Search</Button>
+          <Button onClick={handleSearch} className='bg-[#0f971c] text-white hover:bg-[#0c200e]'>Search</Button>
         </div>
       </div>
     </>
